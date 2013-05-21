@@ -62,17 +62,20 @@
 
 (defun internal-compile-template (string start-delimiter start-echo-delimiter end-delimiter stream-name)
   (let ((start 0) (expressions (list nil)) (stack (list nil)))
-    `(with-output-to-string (,stream-name)
-       ,@(progn
-          (loop
-             for (form end) = (compile-template-part string start start-delimiter start-echo-delimiter end-delimiter stream-name expressions stack)
-             until (>= end (length string)) do
-               (setf start end))
-          (reverse (car expressions))))))
+    ;; Not quite sure why I have to use this weird read-from-string thing here,
+    ;; but I get errors about things being in the wrong package otherwise.
+    ;; TODO: Fix this, it's ugly and there's certainly a better way to do it.
+    `(macrolet (,(read-from-string "(@ (var) `(getf cl-template::__data ,(intern (symbol-name var) :keyword)))"))
+       (with-output-to-string (,stream-name)
+         ,@(progn
+            (loop
+               for (form end) = (compile-template-part string start start-delimiter start-echo-delimiter end-delimiter stream-name expressions stack)
+               until (>= end (length string)) do
+                 (setf start end))
+            (reverse (car expressions)))))))
 
 (defun compile-template (string &key (start-delimiter "<%") (start-echo-delimiter "<%=") (end-delimiter "%>"))
   (let ((stream (gensym)))
     (eval
      `(lambda (__data)
-        (declare (dynamic-extent __data))
         ,(internal-compile-template string start-delimiter start-echo-delimiter end-delimiter stream)))))

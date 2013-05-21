@@ -6,8 +6,7 @@
   :in-order-to ((test-op (test-op #:cl-template-tests)))
   :components ((:file "packages")
                (:file "util" :depends-on ("packages"))
-               (:file "cl-template" :depends-on ("packages" "util"))
-               (:file "predefined" :depends-on ("packages"))))
+               (:file "cl-template" :depends-on ("packages" "util"))))
 
 (asdf:defsystem #:cl-template-tests
   :description "Unit tests for cl-template."
