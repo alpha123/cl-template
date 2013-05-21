@@ -26,13 +26,3 @@
     (is (string= "stuff" (scan-between-delimiters "moar <%=stuff%>" "<%=" "%>")))
     (is (string= " whale " (scan-between-delimiters "<html><%= whale %></html>" "<%=" "%>")))
     (is (string= " other \"<%stuff%>\" " (scan-between-delimiters "<% other \"<%stuff%>\" %>" "<%" "%>" :ignore-list '((#\" . #\")))))))
-
-(test rewrite-variable-accesses
-  "Test rewriting variable accesses to lookups in a plist."
-  (labels ((rewrite-variable-accesses (&rest args) (apply #'cl-template::rewrite-variable-accesses args)))
-    (let ((data (gensym)))
-      (is (= 10 (rewrite-variable-accesses 10 data)))
-      (is (char= #\c (rewrite-variable-accesses #\c data)))
-      (is (equal `(getf ,data :stuff) (rewrite-variable-accesses 'stuff data)))
-      (is (equal `(format nil "~r" (getf ,data :n)) (rewrite-variable-accesses '(format nil "~r" n) data)))
-      (is (equal `(format t "~@r" (add-stuff (getf ,data :x) (get-real-y (getf ,data :y)))) (rewrite-variable-accesses '(format t "~@r" (add-stuff x (get-real-y y))) data))))))

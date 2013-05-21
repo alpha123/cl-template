@@ -102,13 +102,3 @@
                 (return-from scan-between-delimiters (values result (+ index 1 (length end-delimiter) (length result))))))))
          (incf index))
     (values result index)))
-
-(defun rewrite-variable-accesses (sexp data)
-  (return sexp)
-  (cond
-    ((and (symbolp sexp) (not (keywordp sexp))
-          (not (nth-value 1 (find-symbol (symbol-name sexp) 'cl-template-template-symbols))))
-     `(getf ,data ,(intern (symbol-name sexp) :keyword)))
-    ((and sexp (listp sexp) (not (eql (car sexp) 'loop)))
-     (cons (car sexp) (loop for expression in (cdr sexp) collect (rewrite-variable-accesses expression data))))
-    (t sexp)))
