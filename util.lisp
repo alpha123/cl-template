@@ -32,7 +32,7 @@
        for char across string-section do
          (cond
            ;; Not ignoring, but hit an ignore character. Enter ignore state.
-           ((and (not in-ignore) (loop for (c . match) in ignore-list if (char= c char) do (return t)))
+           ((and (not in-ignore) (loop for (c . match) in ignore-list thereis (char= c char)))
             (setf in-ignore char)
             (vector-push-extend char result))
            ;; Ignoring and hit the end ignore character. Enter regular state.
@@ -71,7 +71,7 @@
     (scan-between-delimiters \"what{{ever stuff<ignor{{ing>{{now}}xyz\" :ignore-list '((#\< . #\>)) :start 10)  ; \"now\"
   "
   
-  ;; This works a lot like scan-string-until-ignoring, but with slightly different states:
+  ;; This works a lot like #'scan-string-until-ignoring, but with slightly different states:
   ;; ignore state: we are between some characters where `start-delimiter` and `end-delimiter` should be ignored if they are encountered.
   ;; start state: we are scanning characters that match the `start-delimiter` string.
   ;; regular state: nothing is happening, increment `index`.
@@ -83,7 +83,7 @@
        for char across string-section do
          (cond
            ;; Not ignoring, but hit an ignore character. Enter ignore state.
-           ((and (not in-ignore) (loop for (c . match) in ignore-list if (char= c char) do (return t)))
+           ((and (not in-ignore) (loop for (c . match) in ignore-list thereis (char= c char)))
             (setf in-ignore char))
            ;; Ignoring and hit the end ignore character. Enter regular state.
            ((and in-ignore (char= char (cdr (assoc in-ignore ignore-list))))
@@ -102,3 +102,31 @@
                 (return-from scan-between-delimiters (values result (+ index 1 (length end-delimiter) (length result))))))))
          (incf index))
     (values result index)))
+
+(defun match-pairs-ignoring (string pair &key ignore-list (start 0) end)
+  "Count the occurences of a pair (e.g. []) in a string, ignoring any that occur in between pairs of `ignore-list`.
+  Example:
+    (match-pairs-ignoring \"(something)\" '(#\( . #\)))  ; t
+    (match-pairs-ignoring \"[that <thing]>\" '(#\[ . #\]) :ignore-list '((#\< . #\>)))  ; nil
+  "
+  ;; Another pseudo-FSM-thingy. TODO: Abstract some of this into a macro.
+  ;; Only two states:
+  ;; ignore state: scanning between characters where any occurrences of a member of the pair should be ignored.
+  ;; regular state: if the first member of the pair is encountered, increment the count, if the second one is
+  ;;                encountered, decrement the count.
+  
+  (let ((string-section (subseq string start end))
+        (open-count 0))
+    (loop
+       with in-ignore = nil
+       for char across string-section do
+         (cond
+           ((and (not in-ignore) (loop for (c . match) in ignore-list thereis (char= c char)))
+            (setf in-ignore char))
+           ((and in-ignore (char= char (cdr (assoc in-ignore ignore-list))))
+            (setf in-ignore nil))
+           ((and (not in-ignore) (char= char (car pair)))
+            (incf open-count))
+           ((and (not in-ignore) (char= char (cdr pair)))
+            (decf open-count))))
+    open-count))

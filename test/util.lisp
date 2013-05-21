@@ -6,7 +6,8 @@
 
 (test scan-string-until-ignoring
   "Test the function to scan a string until a certain delimiter."
-  (labels ((scan-string-until-ignoring (&rest args) (apply #'cl-template::scan-string-until-ignoring args)))
+  (labels ((scan-string-until-ignoring (&rest args)
+             (apply #'cl-template::scan-string-until-ignoring args)))
     (is (string= "yeah" (scan-string-until-ignoring "yeah" "%}")))
     (is (string= "abc" (scan-string-until-ignoring "abc|def" "|")))
     (is (string= "" (scan-string-until-ignoring "&stuff" "&")))
@@ -20,9 +21,19 @@
 
 (test scan-between-delimiters
   "Test scanning a string for a substring between two delimiters."
-  (labels ((scan-between-delimiters (&rest args) (apply #'cl-template::scan-between-delimiters args)))
+  (labels ((scan-between-delimiters (&rest args)
+             (apply #'cl-template::scan-between-delimiters args)))
     (is (string= "" (scan-between-delimiters "thingy" "{%" "%}")))
     (is (string= " stuff " (scan-between-delimiters "<% stuff %>" "<%" "%>")))
     (is (string= "stuff" (scan-between-delimiters "moar <%=stuff%>" "<%=" "%>")))
     (is (string= " whale " (scan-between-delimiters "<html><%= whale %></html>" "<%=" "%>")))
     (is (string= " other \"<%stuff%>\" " (scan-between-delimiters "<% other \"<%stuff%>\" %>" "<%" "%>" :ignore-list '((#\" . #\")))))))
+
+(test match-pairs-ignoring
+  "Test counting the occurrences of a pair in a string."
+  (labels ((match-pairs-ignoring (&rest args)
+             (apply #'cl-template::match-pairs-ignoring args)))
+    (is (= 0 (match-pairs-ignoring "(abc)" '(#\( . #\)))))
+    (is (= 1 (match-pairs-ignoring "[hi" '(#\[ . #\]))))
+    (is (= -2 (match-pairs-ignoring "yo>>" '(#\< . #\>))))
+    (is (= 0 (match-pairs-ignoring ":dolphin<:>olympics;" '(#\: . #\;) :ignore-list '((#\< . #\>)))))))

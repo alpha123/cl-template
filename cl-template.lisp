@@ -7,18 +7,21 @@
              (contained
               (loop for expression in (car expressions) until (equal expression last-expression) collect expression do (pop (car expressions)))))
         (nconc last-expression (reverse contained))
-        nil)
-      (let ((needs-pushing nil))
-        (unless (char= (char code 0) #\()
-          (setf needs-pushing t)
-          (setf code (concatenate 'string "(" code ")")))
-        (if (and (char= (char code 0) #\() (char/= (char code (1- (length code))) #\)))
-            (setf needs-pushing t))
-        (let ((expression (read-from-string code)))
-          (if needs-pushing
-              (push expression (car stack)))
-          (push expression (car expressions))
-          expression))))
+        (return-from compile-expression nil)))
+  (let* ((pairs (match-pairs-ignoring code '(#\( . #\)) :ignore-list '((#\" . #\"))))
+         (needs-pushing
+          (cond ((char/= (char code 0) #\()
+                 (setf code (concatenate 'string "(" code ")"))
+                 t)
+                ((> pairs 0)
+                 (setf code (concatenate 'string code (make-string pairs :initial-element #\))))
+                 t)
+                (t nil))))
+    (let ((expression (read-from-string code)))
+      (if needs-pushing
+          (push expression (car stack)))
+      (push expression (car expressions))
+      expression)))
 
 (defun compile-echo-expression (code stream expressions stack)
   (declare (ignore stack))
