@@ -1,13 +1,25 @@
 (in-package #:cl-template)
 
+(defparameter *add-progn-to-if* t "Boolean; whether or not to implicitly add a progn to IF expressions.")
+
+(defun add-progn-to-if-expression (expression)
+  (if (and *add-progn-to-if* (eql (car expression) 'if))
+      (append expression (list (list 'progn)))
+      expression))
+
+(defun handle-end-expression (expressions stack)
+  (let* ((last-expression (pop (car stack)))
+         (contained
+          (loop for expression in (car expressions) until (equal expression last-expression) collect (pop (car expressions)))))
+    (if (equal (last last-expression) (list '(progn)))
+        (nconc (car (last last-expression)) (reverse contained))
+        (nconc last-expression (reverse contained)))
+    nil))
+
 (defun compile-expression (code stream expressions stack)
   (declare (ignore stream))
   (if (or (string= code "end") (string= code ")"))
-      (let* ((last-expression (pop (car stack)))
-             (contained
-              (loop for expression in (car expressions) until (equal expression last-expression) collect expression do (pop (car expressions)))))
-        (nconc last-expression (reverse contained))
-        (return-from compile-expression nil)))
+      (return-from compile-expression (handle-end-expression expressions stack)))
   (let* ((pairs (match-pairs-ignoring code '(#\( . #\)) :ignore-list '((#\" . #\"))))
          (needs-pushing
           (cond ((char/= (char code 0) #\()
@@ -17,7 +29,7 @@
                  (setf code (concatenate 'string code (make-string pairs :initial-element #\))))
                  t)
                 (t nil))))
-    (let ((expression (read-from-string code)))
+    (let ((expression (add-progn-to-if-expression (read-from-string code))))
       (if needs-pushing
           (push expression (car stack)))
       (push expression (car expressions))
@@ -29,13 +41,13 @@
           (cond
             ;; A function call, (format nil "~r" 123)
             ((char= (char code 0) #\()
-             `(write-string ,(read-from-string code)  ,stream))
+             `(write-string ,(read-from-string code) ,stream))
             ;; A variable, stuff
             ((= (length code) (length (scan-string-until-ignoring code " " :ignore-list '((#\" . #\")))))
-             `(write-string ,(read-from-string code)  ,stream))
+             `(write-string ,(read-from-string code) ,stream))
             ;; A function call without outer parens, format nil "~r" 123
             (t
-             `(write-string ,(read-from-string (concatenate 'string "(" code ")"))  ,stream)))))
+             `(write-string ,(read-from-string (concatenate 'string "(" code ")")) ,stream)))))
     (push expression (car expressions))
     expression))
 
@@ -75,6 +87,16 @@
             (reverse (car expressions)))))))
 
 (defun compile-template (string &key (start-delimiter "<%") (start-echo-delimiter "<%=") (end-delimiter "%>"))
+  "Compile a string template into a lambda, which can be invoked with
+  a plist as the only argument and provides data to the template.  The
+  data argument to the lambda is available in the template as
+  `cl-template::__data`, although it's not recommended to use it
+  directly.  See README.md for examples of the template syntax.
+  Examples:
+    (compile-template \"the number is <%= (@ number) %>\")  ; (lambda (__data) ...)
+    (compile-template \"{{= @ mood }} shark\" :start-delimiter \"{{\" :start-echo-delimiter \"{{=\" :end-delimiter \"}}\")  ; (lambda (__data) ...)
+    (funcall (compile-template \"<%= format nil \"~@r\" (@ number) %>\") '(:number 12))  ; \"XII\"
+  "
   (let ((stream (gensym)))
     (eval
      `(lambda (__data)

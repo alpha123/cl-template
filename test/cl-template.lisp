@@ -46,16 +46,26 @@
          '(macrolet ((@ (var) `(getf cl-template::__data ,(intern (symbol-name var) :keyword))))
            (with-output-to-string (__stream)
              (if (@ thing)
-                 (write-string (@ thing) __stream))))
+                 (progn
+                   (write-string (@ thing) __stream)))))
          (compile-template "<% if (@ thing) %><%= @ thing %><% end %>"))
-        "Should compile an IF block, inferring parenthesis.")
+        "Should compile an IF block, inferring parenthesis and adding a progn.")
+    (is (equal
+         '(macrolet ((@ (var) `(getf cl-template::__data ,(intern (symbol-name var) :keyword))))
+           (with-output-to-string (__stream)
+             (if (@ thing)
+                 (progn
+                   (write-string (@ thing) __stream)))))
+         (compile-template "<% (if (@ thing) %><%= @ thing %><% ) %>"))
+        "Should compile an IF block with explicit parenthesis and add a progn.")
     (is (equal
          '(macrolet ((@ (var) `(getf cl-template::__data ,(intern (symbol-name var) :keyword))))
            (with-output-to-string (__stream)
              (if (@ thing)
                  (write-string (@ thing) __stream))))
-         (compile-template "<% (if (@ thing) %><%= @ thing %><% ) %>"))
-        "Should compile an IF block with explicit parenthesis.")
+         (let ((*add-progn-to-if* nil))
+           (compile-template "<% if (@ thing) %><%= @ thing %><% end %>")))
+        "Should not add a progn in an IF block if *add-progn-to-if* is nil.")
     (is (equal
          '(macrolet ((@ (var) `(getf cl-template::__data ,(intern (symbol-name var) :keyword))))
            (with-output-to-string (__stream)
