@@ -14,26 +14,35 @@
     (if (equal (last last-expression) (list '(progn)))
         (nconc (car (last last-expression)) (reverse contained))
         (nconc last-expression (reverse contained)))
-    nil))
+    last-expression))
 
 (defun compile-expression (code stream expressions stack)
   (declare (ignore stream))
-  (if (or (string= code "end") (string= code ")"))
-      (return-from compile-expression (handle-end-expression expressions stack)))
-  (let* ((pairs (match-pairs-ignoring code '(#\( . #\)) :ignore-list '((#\" . #\"))))
-         (needs-pushing
-          (cond ((char/= (char code 0) #\()
-                 (setf code (concatenate 'string "(" code ")"))
-                 t)
-                ((> pairs 0)
-                 (setf code (concatenate 'string code (make-string pairs :initial-element #\))))
-                 t)
-                (t nil))))
-    (let ((expression (add-progn-to-if-expression (read-from-string code))))
-      (if needs-pushing
-          (push expression (car stack)))
-      (push expression (car expressions))
-      expression)))
+  (cond
+    ((or (string= code "end") (string= code ")"))
+     (handle-end-expression expressions stack)
+     nil)
+    ((string= code "else")
+     (let ((last-expression
+            (handle-end-expression expressions stack)))
+       (nconc last-expression (list (list 'progn)))
+       (push last-expression (car stack)))
+     nil)
+    (t
+     (let* ((pairs (match-pairs-ignoring code '(#\( . #\)) :ignore-list '((#\" . #\"))))
+            (needs-pushing
+             (cond ((char/= (char code 0) #\()
+                    (setf code (concatenate 'string "(" code ")"))
+                    t)
+                   ((> pairs 0)
+                    (setf code (concatenate 'string code (make-string pairs :initial-element #\))))
+                    t)
+                   (t nil))))
+       (let ((expression (add-progn-to-if-expression (read-from-string code))))
+         (if needs-pushing
+             (push expression (car stack)))
+         (push expression (car expressions))
+         expression)))))
 
 (defun compile-echo-expression (code stream expressions stack)
   (declare (ignore stack))

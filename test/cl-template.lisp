@@ -69,6 +69,16 @@
     (is (equal
          '(macrolet ((@ (var) `(getf cl-template::__data ,(intern (symbol-name var) :keyword))))
            (with-output-to-string (__stream)
+             (if (@ thing)
+                 (progn
+                   (write-string (@ thing) __stream))
+                 (progn
+                   (write-string "No thing!" __stream)))))
+         (compile-template "<% if (@ thing) %><%= @ thing %><% else %>No thing!<% end %>"))
+        "Should compile an IF block with an ELSE.") 
+    (is (equal
+         '(macrolet ((@ (var) `(getf cl-template::__data ,(intern (symbol-name var) :keyword))))
+           (with-output-to-string (__stream)
              (loop for i below 10 do
                   (write-string "i: " __stream)
                   (write-string (write-to-string i) __stream))))

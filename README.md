@@ -50,8 +50,7 @@ can be written as
 The only deviations from pure Common Lisp are:
 - Parenthesis inferrence
 - `end` can function as a close parenthesis
-- `progn` is automatically inserted into `if` expressions, unless it
-  is already there
+- `progn` is automatically inserted into `if` expressions
 - `else` separates clauses of an `if` expression
 
 All of these are optional - you can choose not to use them at
@@ -77,7 +76,7 @@ Some more examples:
       <% end %>
     ]}
     
-    <!-- Don't use any optional features, just plain Lisp. -->
+    <!-- Don't use any optional features, just plain Lisp. Be sure to set clt:*add-progn-to-if* to nil first. -->
     <% (if (comments (@ article)) %>
       <% (progn
       <ul id="article-<%= (id (@ article)) %>-comments" class="comments">
@@ -120,6 +119,8 @@ Usage example:
         (funcall (cl-template:compile-template template) (list :person person))))
 
 `#'compile-template` does not yet cache the resulting function.
+
+Additionally, to disable automatically adding a `progn` to `if` expressions set `*add-progn-to-if*` to `nil`.
 
 
 [1]: http://ruby-doc.org/stdlib/libdoc/erb/rdoc/ERB.html
