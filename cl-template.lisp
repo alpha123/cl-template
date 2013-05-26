@@ -1,6 +1,7 @@
 (in-package #:cl-template)
 
 (defparameter *add-progn-to-if* t "Boolean; whether or not to implicitly add a progn to IF expressions.")
+(defparameter *template-fn-cache* (make-hash-table :test 'equal) "Hash table which compiled template functions are cached in.")
 
 (defun add-progn-to-if-expression (expression)
   (if (and *add-progn-to-if* (eql (car expression) 'if))
@@ -101,12 +102,18 @@
   data argument to the lambda is available in the template as
   `cl-template::__data`, although it's not recommended to use it
   directly.  See README.md for examples of the template syntax.
+  It caches the result of the compilation.
   Examples:
     (compile-template \"the number is <%= (@ number) %>\")  ; (lambda (__data) ...)
     (compile-template \"{{= @ mood }} shark\" :start-delimiter \"{{\" :start-echo-delimiter \"{{=\" :end-delimiter \"}}\")  ; (lambda (__data) ...)
     (funcall (compile-template \"<%= format nil \"~@r\" (@ number) %>\") '(:number 12))  ; \"XII\"
   "
-  (let ((stream (gensym)))
-    (eval
-     `(lambda (__data)
-        ,(internal-compile-template string start-delimiter start-echo-delimiter end-delimiter stream)))))
+  (let ((cached-fn (gethash string *template-fn-cache*)))
+    (if cached-fn
+        cached-fn
+        (let* ((stream (gensym))
+               (fn
+                (eval
+                 `(lambda (__data)
+                    ,(internal-compile-template string start-delimiter start-echo-delimiter end-delimiter stream)))))
+          (setf (gethash string *template-fn-cache*) fn)))))

@@ -120,3 +120,12 @@
         "Should support conditionals.")
     (is (string= "" (run-template "<% if (= (@ x) 1) %>one<% end %>" '(:x 0)))
         "Should return an empty string if the conditional doesn't match.")))
+
+(test cache-template
+  "Test that templates are cached."
+  (is (eq
+       (compile-template "hello world!")
+       (compile-template "hello world!")))
+  (is (not (eq
+            (compile-template "hurray!")
+            (compile-template "meh.")))))
