@@ -14,6 +14,6 @@
   :author "Peter Cannici <turkchess123@gmail.com>"
   :license "MIT"
   :depends-on (#:cl-template #:fiveam)
-  :components ((:file "packages")
-               (:file "test/util" :depends-on ("packages"))
-               (:file "test/cl-template" :depends-on ("packages"))))
+  :components ((:file "test/packages")
+               (:file "test/util" :depends-on ("test/packages"))
+               (:file "test/cl-template" :depends-on ("test/packages"))))
