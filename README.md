@@ -122,6 +122,9 @@ Usage example:
 
 Additionally, to disable automatically adding a `progn` to `if` expressions set `*add-progn-to-if*` to `nil`.
 
+cl-template is licensed under the MIT license.    
+Copyright (c) 2013 Peter Cannici
+
 
 [1]: http://ruby-doc.org/stdlib/libdoc/erb/rdoc/ERB.html
 [2]: http://common-lisp.net/project/cl-emb/
