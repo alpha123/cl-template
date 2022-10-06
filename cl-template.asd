@@ -3,12 +3,12 @@
   :version "0.0.1"
   :author "Peter Cannici <turkchess123@gmail.com>"
   :license "MIT"
-  :in-order-to ((test-op (test-op #:cl-template-tests)))
+  :in-order-to ((test-op (test-op #:cl-template/tests)))
   :components ((:file "packages")
                (:file "util" :depends-on ("packages"))
                (:file "cl-template" :depends-on ("packages" "util"))))
 
-(asdf:defsystem #:cl-template-tests
+(asdf:defsystem #:cl-template/tests
   :description "Unit tests for cl-template."
   :version "0.0.1"
   :author "Peter Cannici <turkchess123@gmail.com>"
